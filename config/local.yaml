@@ -1,0 +1,3 @@
+env: "local"
+storage_path: "./storage/storage.db"
+token: "6379666348:AAGpu1cgepFpAjcalmC1ap_xxX-uMoXYwms"

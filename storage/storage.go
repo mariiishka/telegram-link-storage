@@ -7,6 +7,11 @@ import (
 	"io"
 )
 
+var (
+	ErrURLNotFound = errors.New("url not found")
+	ErrURLExists   = errors.New("url exists")
+)
+
 type Storage interface {
 	Save(p *Page) error
 	PickRandom(userName string) (*Page, error)

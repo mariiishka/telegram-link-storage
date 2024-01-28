@@ -23,12 +23,12 @@ func New(basePath string) Storage {
 }
 
 func (s Storage) Save(page *storage.Page) (err error) {
-	const op = "storage.files.Save"
+	const op = "files.Save"
 	defer func() { err = fmt.Errorf("%s: can't save page %w", op, err) }()
 
-	filePath := filepath.Join(s.basePath, page.UserName)
+	fPath := filepath.Join(s.basePath, page.UserName)
 
-	if err := os.MkdirAll(filePath, defaultPerm); err != nil {
+	if err := os.MkdirAll(fPath, defaultPerm); err != nil {
 		return err
 	}
 
@@ -37,13 +37,12 @@ func (s Storage) Save(page *storage.Page) (err error) {
 		return err
 	}
 
-	filePath = filepath.Join(filePath, fName)
+	fPath = filepath.Join(fPath, fName)
 
-	file, err := os.Create(filePath)
+	file, err := os.Create(fPath)
 	if err != nil {
 		return err
 	}
-
 	defer func() { _ = file.Close() }()
 
 	if err := gob.NewEncoder(file).Encode(page); err != nil {
@@ -122,13 +121,12 @@ func (s Storage) decodePage(filePath string) (*storage.Page, error) {
 	if err != nil {
 		return nil, fmt.Errorf("can't decode page: %w", err)
 	}
-
 	defer func() { _ = f.Close() }()
 
 	var p storage.Page
 
 	if err := gob.NewDecoder(f).Decode(&p); err != nil {
-		return nil, err
+		return nil, fmt.Errorf("can't decode page: %w", err)
 	}
 
 	return &p, nil

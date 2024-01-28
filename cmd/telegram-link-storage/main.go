@@ -1,25 +1,32 @@
 package main
 
 import (
-	"flag"
 	"log"
 
 	tgClient "github.com/mariiishka/telegram-link-storage/clients/telegram"
 	event_consumer "github.com/mariiishka/telegram-link-storage/consumer/event-consumer"
 	"github.com/mariiishka/telegram-link-storage/events/telegram"
-	"github.com/mariiishka/telegram-link-storage/storage/files"
+	"github.com/mariiishka/telegram-link-storage/internal/config"
+	"github.com/mariiishka/telegram-link-storage/internal/storage/sqlite"
 )
 
 const (
 	tgBotHost   = "api.telegram.org"
-	storagePath = "storage"
+	storagePath = "files_storage"
 	batchSize   = 100
 )
 
 func main() {
+	cfg := config.MustLoad()
+
+	storage, err := sqlite.New(cfg.StoragePath)
+	if err != nil {
+		log.Fatal("failed to init storage: ", err)
+	}
+
 	eventsProcessor := telegram.New(
-		tgClient.New(tgBotHost, mustToken()),
-		files.New(storagePath),
+		tgClient.New(tgBotHost, cfg.Token),
+		storage,
 	)
 
 	log.Print("service started")
@@ -28,15 +35,4 @@ func main() {
 	if err := consumer.Start(); err != nil {
 		log.Fatal("service is stopped", err)
 	}
-}
-
-func mustToken() string {
-	token := flag.String("tg-bot-token", "", "token for access to telegram bot")
-
-	flag.Parse()
-	if *token == "" {
-		log.Fatal("token is not specified")
-	}
-
-	return *token
 }
