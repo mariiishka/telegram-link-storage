@@ -6,13 +6,13 @@ import (
 
 	"github.com/mariiishka/telegram-link-storage/clients/telegram"
 	"github.com/mariiishka/telegram-link-storage/events"
-	"github.com/mariiishka/telegram-link-storage/internal/storage/sqlite"
+	"github.com/mariiishka/telegram-link-storage/storage"
 )
 
 type Processor struct {
 	tg      *telegram.Client
 	offset  int
-	storage *sqlite.Storage
+	storage storage.Storage
 }
 
 type Meta struct {
@@ -25,7 +25,7 @@ var (
 	ErrUnknownMetaType  = errors.New("unknown meta type")
 )
 
-func New(client *telegram.Client, storage *sqlite.Storage) *Processor {
+func New(client *telegram.Client, storage storage.Storage) *Processor {
 	return &Processor{
 		tg:      client,
 		storage: storage,

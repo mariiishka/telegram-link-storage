@@ -2,6 +2,7 @@ package telegram
 
 import (
 	"errors"
+	"fmt"
 	"log"
 	"net/url"
 	"strings"
@@ -37,14 +38,23 @@ func (p *Processor) doCmd(text string, chatID int, username string) error {
 }
 
 func (p *Processor) savePage(chatID int, pageUrl string, username string) (err error) {
-	_, err = p.storage.SaveLink(pageUrl, username)
+	defer func() { err = fmt.Errorf("can't do command: save page %w", err) }()
 
-	if err != nil && !errors.Is(err, storage.ErrURLExists) {
-		return err
+	page := &storage.Page{
+		URL:      pageUrl,
+		UserName: username,
 	}
 
-	if errors.Is(err, storage.ErrURLExists) {
+	isExists, err := p.storage.IsExists(page)
+	if err != nil {
+		return err
+	}
+	if isExists {
 		return p.tg.SendMessage(chatID, msgAlreadyExists)
+	}
+
+	if err := p.storage.Save(page); err != nil {
+		return err
 	}
 
 	if err := p.tg.SendMessage(chatID, msgSaved); err != nil {
@@ -54,8 +64,10 @@ func (p *Processor) savePage(chatID int, pageUrl string, username string) (err e
 	return nil
 }
 
-func (p *Processor) sendRandom(chatID int, username string) error {
-	link, err := p.storage.PickRandom(username)
+func (p *Processor) sendRandom(chatID int, username string) (err error) {
+	defer func() { err = fmt.Errorf("can't do command: can't send random %w", err) }()
+
+	page, err := p.storage.PickRandom(username)
 	if err != nil && !errors.Is(err, storage.ErrNoSavedPages) {
 		return err
 	}
@@ -64,11 +76,11 @@ func (p *Processor) sendRandom(chatID int, username string) error {
 		return p.tg.SendMessage(chatID, msgNoSavedPages)
 	}
 
-	if err := p.tg.SendMessage(chatID, link.URL); err != nil {
+	if err := p.tg.SendMessage(chatID, page.URL); err != nil {
 		return err
 	}
 
-	return p.storage.DeleteLink(link.ID)
+	return p.storage.Remove(page)
 }
 
 func (p *Processor) sendHelp(chatID int) error {
